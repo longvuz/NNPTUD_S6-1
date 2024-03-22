@@ -1,81 +1,86 @@
 
 var express = require('express');
 var router = express.Router();
+var bookModel = require('../schemas/book')
 
-function GenID(num) {
-    let source = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghiklmnopqrstuvwxyz0123456789";
-    var result = "";
-    for (let index = 0; index < num; index++) {
-        var rand = parseInt(Math.random() * 61);
-        result += source[rand];
-    }
-    return result;
-}
 
-var books = [{
-    id: 1,
-    name: "toan lop 1"
-}, {
-    id: 2,
-    name: "tieng viet lop 1"
-}, {
-    id: 3,
-    name: "dao duc lop 1"
-}]
 
-//localhost:3000/api/v1/books
-/* GET users listing. */
-router.get('/', function (req, res, next) {
-    var remainbooks = books.filter(book => !book.isDeleted);
-    res.status(200).send(remainbooks);
-});
-
-// Sử dụng các hàm build in của Array
-//  để tìm ra quyển sách có id là req.param.id
-//+0.5
-//localhost:3000/api/v1/books/1
-router.get('/:id', function (req, res, next) {
-    let book = books.find(book => book.id == req.params.id);
-    if (book) {
-        res.status(200).send(book);
-    } else {
-        res.status(404).send("ID khong ton tai");
-    }
-});
-
-router.post('/', function (req, res, next) {
-    let book = books.find(book => book.id == req.body.id);
-    if (book) {
-        res.status(404).send("ID da ton tai");
-    } else {
-        let newbook = {
-            id: GenID(16),
-            name: req.body.name
+/*
+Viết mã nguồn để thực hiện chuôi query với yêu cầu như sau
+ngoại trừ các thuộc tính như sort,page,limit 
+thì các trường còn lại sẽ check contain
+*/
+router.get('/', async function (req, res, next) {
+    let queries = {};
+    let exclude = ["sort", "page", "limit"];
+    let arrayString = ["name","author"]
+    for (const [key, value] of Object.entries(req.query)) {
+        if(!exclude.includes(key)){
+            queries[key] = new RegExp(value.replace(',','|'),'i');
         }
-        books.push(newbook);
-        res.status(200).send(newbook);
     }
+    queries.isDeleted = false;
+    console.log(queries);
+    let limit = req.query.limit ? req.query.limit : 5;
+    let page = req.query.page ? req.query.page : 1;
+    let sort = {};
+    if (req.query.sort) {
+        if (req.query.sort.startsWith('-')) {
+            sort[req.query.sort.substring(1, req.query.sort.length)] = -1;
+        } else {
+            sort[req.query.sort] = 1;
+        }
+    }
+    let newqueryName = req.query.name.replace(',', '|');
+    var books = await bookModel.find(
+        queries)
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .sort(sort)
+        .exec();
+    res.status(200).send(books);
 });
 
-router.put('/:id', function (req, res, next) {
-    let book = books.find(book => book.id == req.params.id);
-    if (book) {
-        book.name = req.body.name;
+router.get('/:id', async function (req, res, next) {
+    try {
+        let book = await bookModel.find({ _id: req.params.id }).exec();
         res.status(200).send(book);
-    } else {
-        res.status(404).send("ID khong ton tai");
+    } catch (error) {
+        res.status(404).send(error);
     }
 });
 
-router.delete('/:id', function (req, res, next) {
-    let book = books.find(book => book.id == req.params.id);
-    if (book) {
-        // var index = books.indexOf(book);
-        // books.splice(index,1);
-        book.isDeleted = true;
-        res.status(200).send("xoa thanh cong");
-    } else {
-        res.status(404).send("ID khong ton tai");
+router.post('/', async function (req, res, next) {
+    var newBook = new bookModel({
+        name: req.body.name,
+        year: req.body.year,
+        author: req.body.author
+    })
+    await newBook.save();
+    res.status(200).send(newBook);
+});
+
+router.put('/:id', async function (req, res, next) {
+    try {
+        var book = await bookModel.findByIdAndUpdate(req.params.id, req.body, {
+            new: true
+        });
+        res.status(200).send(book);
+    } catch (error) {
+        res.status(404).send(error);
+    }
+
+});
+
+router.delete('/:id', async function (req, res, next) {
+    try {
+        var book = await bookModel.findByIdAndUpdate(req.params.id,
+            { isDeleted: true }, {
+            new: true
+        });
+        res.status(200).send(book);
+    } catch (error) {
+        res.status(404).send(error);
     }
 });
 
