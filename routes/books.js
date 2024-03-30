@@ -13,13 +13,25 @@ thì các trường còn lại sẽ check contain
 router.get('/', async function (req, res, next) {
     let queries = {};
     let exclude = ["sort", "page", "limit"];
+    let stringArray = ["name", "author"];
+    let numberArray = ["year"]
     for (const [key, value] of Object.entries(req.query)) {
-        if(!exclude.includes(key)){
-            queries[key] = new RegExp(value.replace(',','|'),'i');
+        if (!exclude.includes(key)) {
+            if (stringArray.includes(key)) {
+                queries[key] = new RegExp(value.replace(',', '|'), 'i');
+            }
+            if (numberArray.includes(key)) {
+                let string = JSON.stringify(value);
+                let index = string.search(new RegExp('lte|lt|gte|gt', 'g'));
+                if (index < 0) {
+                    queries[key] = value;
+                } else {
+                    queries[key] = JSON.parse(string.replaceAll(new RegExp('lte|lt|gte|gt', 'g'),(res)=>'$'+res));
+                }
+            }
         }
     }
     queries.isDeleted = false;
-    console.log(queries);
     let limit = req.query.limit ? req.query.limit : 5;
     let page = req.query.page ? req.query.page : 1;
     let sort = {};
@@ -31,7 +43,7 @@ router.get('/', async function (req, res, next) {
         }
     }
     var books = await bookModel.find(
-        queries).populate({path:'author',select:"_id name"}).lean()
+        queries).populate({ path: 'author', select: "_id name" }).lean()
         .skip((page - 1) * limit)
         .limit(limit)
         .sort(sort)
