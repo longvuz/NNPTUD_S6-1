@@ -3,10 +3,10 @@ var router = express.Router();
 var userModel = require('../schemas/user')
 var checkvalid = require('../validators/user')
 var { validationResult } = require('express-validator');
-var protect = require('../middlewares/protectLogin')
+var protectLogin = require('../middlewares/protectLogin')
+var protectRole = require('../middlewares/protectRole')
 
-
-router.get('/', protect, async function (req, res, next) {
+router.get('/', protectLogin, protectRole("ADMIN", "MODIFIER"), async function (req, res, next) {
   let users = await userModel.find({}).exec();
   res.status(200).send(users);
 });
@@ -20,7 +20,7 @@ router.get('/:id', async function (req, res, next) {
   }
 });
 
-router.post('/', checkvalid(), async function (req, res, next) {
+router.post('/', checkvalid(), protectLogin, protectRole("ADMIN"), async function (req, res, next) {
   var result = validationResult(req);
   if (result.errors.length > 0) {
     res.status(404).send(result.errors);

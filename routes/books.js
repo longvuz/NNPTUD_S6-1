@@ -2,6 +2,8 @@
 var express = require('express');
 var router = express.Router();
 var bookModel = require('../schemas/book')
+var resHandle = require('../helpers/resHandle');
+const book = require('../schemas/book');
 
 
 
@@ -26,7 +28,7 @@ router.get('/', async function (req, res, next) {
                 if (index < 0) {
                     queries[key] = value;
                 } else {
-                    queries[key] = JSON.parse(string.replaceAll(new RegExp('lte|lt|gte|gt', 'g'),(res)=>'$'+res));
+                    queries[key] = JSON.parse(string.replaceAll(new RegExp('lte|lt|gte|gt', 'g'), (res) => '$' + res));
                 }
             }
         }
@@ -48,15 +50,16 @@ router.get('/', async function (req, res, next) {
         .limit(limit)
         .sort(sort)
         .exec();
-    res.status(200).send(books);
+    resHandle(res, true, books);
+
 });
 
 router.get('/:id', async function (req, res, next) {
     try {
         let book = await bookModel.find({ _id: req.params.id }).exec();
-        res.status(200).send(book);
+        resHandle(res, true, book);
     } catch (error) {
-        res.status(404).send(error);
+        resHandle(res, false, error);
     }
 });
 
@@ -68,9 +71,9 @@ router.post('/', async function (req, res, next) {
             author: req.body.author
         })
         await newBook.save();
-        res.status(200).send(newBook);
+        resHandle(res, true, newBook);
     } catch (error) {
-        res.status(404).send(error);
+        resHandle(res, false, error);
     }
 });
 
@@ -79,9 +82,9 @@ router.put('/:id', async function (req, res, next) {
         var book = await bookModel.findByIdAndUpdate(req.params.id, req.body, {
             new: true
         });
-        res.status(200).send(book);
+        resHandle(res, true, book);
     } catch (error) {
-        res.status(404).send(error);
+        resHandle(res, false, error);
     }
 
 });
@@ -92,13 +95,10 @@ router.delete('/:id', async function (req, res, next) {
             { isDeleted: true }, {
             new: true
         });
-        res.status(200).send(book);
+        resHandle(res, true, book);
     } catch (error) {
-        res.status(404).send(error);
+        resHandle(res, false, error);
     }
 });
-
-
-
 
 module.exports = router;
