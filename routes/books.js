@@ -4,7 +4,8 @@ var router = express.Router();
 var bookModel = require('../schemas/book')
 var resHandle = require('../helpers/resHandle');
 const book = require('../schemas/book');
-
+const validationError = require('../Errors/validationError')
+require('express-async-errors')
 
 
 /*
@@ -55,12 +56,9 @@ router.get('/', async function (req, res, next) {
 });
 
 router.get('/:id', async function (req, res, next) {
-    try {
-        let book = await bookModel.find({ _id: req.params.id }).exec();
-        resHandle(res, true, book);
-    } catch (error) {
-        resHandle(res, false, error);
-    }
+    throw new validationError("heheehehehe")
+    // let book = await bookModel.find({ _id: req.params.id }).exec();
+    // resHandle(res, true, book);
 });
 
 router.post('/', async function (req, res, next) {

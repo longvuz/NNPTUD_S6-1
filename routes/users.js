@@ -5,6 +5,7 @@ var checkvalid = require('../validators/user')
 var { validationResult } = require('express-validator');
 var protectLogin = require('../middlewares/protectLogin')
 var protectRole = require('../middlewares/protectRole')
+require('express-async-errors')
 
 router.get('/', protectLogin, protectRole("ADMIN", "MODIFIER"), async function (req, res, next) {
   let users = await userModel.find({}).exec();
@@ -38,6 +39,7 @@ router.post('/', checkvalid(), protectLogin, protectRole("ADMIN"), async functio
       success: true,
       data: newUser
     });
+    throw new Error("heheehehehe")
   } catch (error) {
     res.status(404).send({
       success: false,

@@ -9,6 +9,20 @@ let sendmail = require('../helpers/sendmail')
 let resHandle = require('../helpers/resHandle')
 let config = require('../configs/config')
 
+router.post('/changepassword', protect, async function (req, res, next) {
+  let result = bcrypt.compareSync(req.body.oldpassword, req.user.password);
+  if (result) {
+    let user = req.user;
+    user.password = req.body.newpassword;
+    await user.save();
+    resHandle(res, true, "doi pass thanh cong");
+  } else {
+    resHandle(res, false, "password khong dung");
+  }
+
+})
+
+
 
 router.post('/forgotpassword', async function (req, res, next) {
   let email = req.body.email;
@@ -92,7 +106,7 @@ router.post('/login', async function (req, res, next) {
   }
   let result = bcrypt.compareSync(password, user.password);
   if (result) {
-    var tokenUser = user.genJWT();f
+    var tokenUser = user.genJWT();
     res.status(200).cookie('token', tokenUser, {
       expires: new Date(Date.now() + config.COOKIES_EXP_HOUR * 3600 * 1000),
       httpOnly: true
