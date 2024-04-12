@@ -33,7 +33,9 @@ router.post('/forgotpassword', async function (req, res, next) {
   }
   let token = user.genResetPassword();
   await user.save();
-  let url = `http://localhost:3000/api/v1/auth/resetpassword/${token}`
+  //let url = `http://localhost:3000/api/v1/auth/resetpassword/${token}`
+  //doi link sang form nham passsword
+  //link post dc gan vao  button
   try {
     await sendmail(user.email, url);
     resHandle(res, true, "gui mail thanh cong");
